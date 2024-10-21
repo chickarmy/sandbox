@@ -21,14 +21,15 @@ jobs:
           mv $FILE_NAME ./packages/
           echo "Preparing file for release"
 
-      - name: Set public repo URL
-        run: echo "REPO_API_URL=https://api.github.com/repos/boly38/chickenbot-web" >> $GITHUB_ENV
+      - name: Set public repo URLs
+        run: |
+          echo "REPO_API_URL=https://api.github.com/repos/boly38/chickenbot-web" >> $GITHUB_ENV
+          echo "UPLOAD_API_URL=https://uploads.github.com/repos/boly38/chickenbot-web" >> $GITHUB_ENV
 
       - name: Create Release in Public Repo
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          # Create a temporary file to store the API response
           RESPONSE_FILE="release_response.json"
           
           # Create the release and save the response in a file
@@ -40,7 +41,7 @@ jobs:
               "target_commitish": "main",
               "name": "'${{ github.ref_name }}'",
               "body": "Release from private repo",
-              "draft": false,
+              "draft": true,
               "prerelease": false
             }' \
             ${{ env.REPO_API_URL }}/releases > $RESPONSE_FILE
@@ -59,32 +60,18 @@ jobs:
 
           echo "Release created successfully! ID: $RELEASE_ID"
 
-      - name: Remove existing assets
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-          # List existing assets
-          ASSETS=$(curl -s \
-            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
-            "${{ env.REPO_API_URL }}/releases/$RELEASE_ID/assets" | jq -r '.[].id')
-
-          # Loop over each asset and delete it
-          for ASSET_ID in $ASSETS; do
-            echo "Deleting asset $ASSET_ID"
-            curl -X DELETE \
-              -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
-              "${{ env.REPO_API_URL }}/releases/assets/$ASSET_ID"
-          done
-
       - name: Upload asset to Release
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          curl -X POST \
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary @./packages/package.readme.txt \
-            "${{ env.REPO_API_URL }}/releases/$RELEASE_ID/assets?name=package.readme.txt"
+            "${{ env.UPLOAD_API_URL }}/releases/${RELEASE_ID}/assets?name=package.readme.txt" \
+            --data-binary @./packages/package.readme.txt
 
       - name: Echo release and download links
         env:
