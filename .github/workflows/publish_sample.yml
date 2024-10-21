@@ -28,7 +28,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          curl -X POST \
+          RESPONSE=$(curl -X POST -w "%{http_code}" -o /dev/null -s \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{
@@ -39,24 +39,32 @@ jobs:
               "draft": false,
               "prerelease": false
             }' \
-            ${{ env.REPO_API_URL }}/releases
+            ${{ env.REPO_API_URL }}/releases)
+
+          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 300 ]; then
+            echo "Release created successfully!"
+          else
+            echo "Failed to create release, HTTP status code: $RESPONSE"
+            if [ "$RESPONSE" -eq 401 ]; then
+              echo "Authentication failed. Check if the PAT token is valid."
+            fi
+            exit 1
+          fi
 
       - name: Upload asset to Release
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" ${{ env.REPO_API_URL }}/releases/tags/${{ github.ref_name }} | jq -r '.id')
           curl -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Content-Type: application/octet-stream" \
             --data-binary @./packages/package.readme.txt \
-            "${{ env.REPO_API_URL }}/releases/$RELEASE_ID/assets?name=package.readme.txt"
+            "${{ env.REPO_API_URL }}/releases/tags/${{ github.ref_name }}/assets?name=package.readme.txt"
 
       - name: Echo release and download links
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" ${{ env.REPO_API_URL }}/releases/tags/${{ github.ref_name }} | jq -r '.id')
           RELEASE_URL="https://github.com/boly38/chickenbot-web/releases/tag/${{ github.ref_name }}"
           DOWNLOAD_URL="https://github.com/boly38/chickenbot-web/releases/download/${{ github.ref_name }}/package.readme.txt"
 
