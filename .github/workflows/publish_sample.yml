@@ -28,7 +28,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          RESPONSE=$(curl -X POST -w "%{http_code}" -o /dev/null -s \
+          RESPONSE=$(curl -s -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{
@@ -41,15 +41,31 @@ jobs:
             }' \
             ${{ env.REPO_API_URL }}/releases)
 
-          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 300 ]; then
-            echo "Release created successfully!"
-          else
-            echo "Failed to create release, HTTP status code: $RESPONSE"
-            if [ "$RESPONSE" -eq 401 ]; then
-              echo "Authentication failed. Check if the PAT token is valid."
-            fi
+          RELEASE_ID=$(echo "$RESPONSE" | jq -r '.id')
+
+          if [ "$RELEASE_ID" == "null" ]; then
+            echo "Failed to create release: $RESPONSE"
             exit 1
           fi
+
+          echo "Release created successfully! ID: $RELEASE_ID"
+
+      - name: Remove existing assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          # List existing assets
+          ASSETS=$(curl -s \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            "${{ env.REPO_API_URL }}/releases/$RELEASE_ID/assets" | jq -r '.[].id')
+
+          # Loop over each asset and delete it
+          for ASSET_ID in $ASSETS; do
+            echo "Deleting asset $ASSET_ID"
+            curl -X DELETE \
+              -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+              "${{ env.REPO_API_URL }}/releases/assets/$ASSET_ID"
+          done
 
       - name: Upload asset to Release
         env:
@@ -59,7 +75,7 @@ jobs:
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Content-Type: application/octet-stream" \
             --data-binary @./packages/package.readme.txt \
-            "${{ env.REPO_API_URL }}/releases/tags/${{ github.ref_name }}/assets?name=package.readme.txt"
+            "${{ env.REPO_API_URL }}/releases/$RELEASE_ID/assets?name=package.readme.txt"
 
       - name: Echo release and download links
         env:
