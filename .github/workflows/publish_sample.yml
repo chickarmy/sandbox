@@ -1,0 +1,64 @@
+name: Publish to Public Repo Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout private repo
+        uses: actions/checkout@v3
+
+      - name: Prepare file for release
+        run: |
+          FILE_NAME="package.readme.txt"
+          echo 'this is sample publish from private repo' > $FILE_NAME
+          mkdir -p ./packages
+          mv $FILE_NAME ./packages/
+          echo "Preparing file for release"
+
+      - name: Set public repo URL
+        run: echo "REPO_API_URL=https://api.github.com/repos/boly38/chickenbot-web" >> $GITHUB_ENV
+
+      - name: Create Release in Public Repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tag_name": "'${{ github.ref_name }}'",
+              "target_commitish": "main",
+              "name": "'${{ github.ref_name }}'",
+              "body": "Release from private repo",
+              "draft": false,
+              "prerelease": false
+            }' \
+            ${{ env.REPO_API_URL }}/releases
+
+      - name: Upload asset to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" ${{ env.REPO_API_URL }}/releases/tags/${{ github.ref_name }} | jq -r '.id')
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @./packages/package.readme.txt \
+            "${{ env.REPO_API_URL }}/releases/$RELEASE_ID/assets?name=package.readme.txt"
+
+      - name: Echo release and download links
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" ${{ env.REPO_API_URL }}/releases/tags/${{ github.ref_name }} | jq -r '.id')
+          RELEASE_URL="https://github.com/boly38/chickenbot-web/releases/tag/${{ github.ref_name }}"
+          DOWNLOAD_URL="https://github.com/boly38/chickenbot-web/releases/download/${{ github.ref_name }}/package.readme.txt"
+
+          echo "Release page: $RELEASE_URL"
+          echo "Direct download link: $DOWNLOAD_URL"
