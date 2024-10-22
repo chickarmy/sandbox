@@ -59,6 +59,13 @@ jobs:
           fi
 
           echo "Release created successfully! ID: $RELEASE_ID"
+          echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+
+      - name: Get upload URL
+        id: geturl
+        run:   |
+          upload_url=$(curl -sL ${{ env.REPO_API_URL }}/releases/${{ env.RELEASE_ID }}?access_token=${{ secrets.PAT_TOKEN }} | jq -r '.upload_url')
+          echo ::set-output name=upload_url::$upload_url
 
       - name: Upload Release Asset
         id: upload-release-asset
@@ -66,7 +73,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
-          upload_url: ${{ env.UPLOAD_API_URL }}/releases/${RELEASE_ID}/assets
+          upload_url: ${{ steps.geturl.outputs.upload_url }}
           asset_path: ./packages/package.readme.txt
           asset_name: package.readme.txt
           asset_content_type: text/plain
