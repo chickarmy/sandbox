@@ -13,6 +13,7 @@ jobs:
       REPO_WEB_URL: https://github.com/boly38/chickenbot-web
       REPO_API_URL: https://api.github.com/repos/boly38/chickenbot-web
       FILE_NAME: package.readme.txt
+      SKIP_PUBLISH: true
 
     steps:
       - name: Checkout private repo
@@ -62,11 +63,14 @@ jobs:
           echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
           echo "RELEASE_UPLOAD_URL=$RELEASE_UPLOAD_URL" >> $GITHUB_ENV
 
-      # rely on @actions/github NodeJS library - WARN: archived repository
-      # https://github.com/actions/upload-release-asset/blob/main/src/upload-release-asset.js
+      # rely on @actions/github NodeJS library
+      ## original action - WARN: archived repository
+      ## uses: actions/upload-release-asset@v1
+      ## https://github.com/actions/upload-release-asset/blob/main/src/upload-release-asset.js
       - name: Upload Release Asset
         id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+        # more recent fork node16 @v1.1.1 => @main WARN about changes
+        uses: sekwah41/upload-release-assets@main
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
@@ -76,6 +80,7 @@ jobs:
           asset_content_type: text/plain
 
       - name: Publish Draft Release
+        if: ${{ env.SKIP_PUBLISH != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
@@ -87,7 +92,8 @@ jobs:
             ${{ env.REPO_API_URL }}/releases/${{ env.RELEASE_ID }}
 
       ## WARN : links are ok only when release is published
-      - name: Echo release and download links
+      - name: Echo published release and download links
+        if: ${{ env.SKIP_PUBLISH != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
