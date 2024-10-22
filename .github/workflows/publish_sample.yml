@@ -9,22 +9,21 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    env:
+      REPO_WEB_URL: https://github.com/boly38/chickenbot-web
+      REPO_API_URL: https://api.github.com/repos/boly38/chickenbot-web
+      FILE_NAME: package.readme.txt
+
     steps:
       - name: Checkout private repo
         uses: actions/checkout@v3
 
       - name: Prepare file for release
         run: |
-          FILE_NAME="package.readme.txt"
           echo 'this is sample publish from private repo' > $FILE_NAME
           mkdir -p ./packages
           mv $FILE_NAME ./packages/
           echo "Preparing file for release"
-
-      - name: Set public repo URLs
-        run: |
-          echo "REPO_API_URL=https://api.github.com/repos/boly38/chickenbot-web" >> $GITHUB_ENV
-          echo "UPLOAD_API_URL=https://uploads.github.com/repos/boly38/chickenbot-web" >> $GITHUB_ENV
 
       - name: Create Release in Public Repo
         env:
@@ -59,10 +58,12 @@ jobs:
             exit 1
           fi
 
-          echo "Release created successfully! ID: $RELEASE_ID - RELEASE_UPLOAD_URL: $RELEASE_UPLOAD_URL"
+          echo "Release created successfully! id: $RELEASE_ID - upload_url: $RELEASE_UPLOAD_URL"
           echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
           echo "RELEASE_UPLOAD_URL=$RELEASE_UPLOAD_URL" >> $GITHUB_ENV
 
+      # rely on @actions/github NodeJS library - WARN: archived repository
+      # https://github.com/actions/upload-release-asset/blob/main/src/upload-release-asset.js
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
@@ -70,16 +71,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           upload_url: ${{ env.RELEASE_UPLOAD_URL }}
-          asset_path: ./packages/package.readme.txt
-          asset_name: package.readme.txt
+          asset_path: ./packages/${{ env.FILE_NAME }}
+          asset_name: ${{ env.FILE_NAME }}
           asset_content_type: text/plain
 
+      - name: Publish Draft Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          # Convert the draft release to a published release
+          curl -s -X PATCH \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"draft": false}' \
+            ${{ env.REPO_API_URL }}/releases/${{ env.RELEASE_ID }}
+
+      ## WARN : links are ok only when release is published
       - name: Echo release and download links
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          RELEASE_URL="https://github.com/boly38/chickenbot-web/releases/tag/${{ github.ref_name }}"
-          DOWNLOAD_URL="https://github.com/boly38/chickenbot-web/releases/download/${{ github.ref_name }}/package.readme.txt"
+          RELEASE_URL="${{ env.REPO_WEB_URL }}/releases/tag/${{ github.ref_name }}"
+          DOWNLOAD_URL="${{ env.REPO_WEB_URL }}/releases/download/${{ github.ref_name }}/package.readme.txt"
 
           echo "Release page: $RELEASE_URL"
           echo "Direct download link: $DOWNLOAD_URL"
