@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      REPO_WEB_URL: https://github.com/boly38/chickenbot-web
-      REPO_API_URL: https://api.github.com/repos/boly38/chickenbot-web
+      REPO_WEB_URL: https://github.com/chickarmy/chickenbot-web
+      REPO_API_URL: https://api.github.com/repos/chickarmy/chickenbot-web
       FILE_NAME: package.readme.txt
       SKIP_PUBLISH: true
 
@@ -102,3 +102,11 @@ jobs:
 
           echo "Release page: $RELEASE_URL"
           echo "Direct download link: $DOWNLOAD_URL"
+
+      - name: Trigger workflow in doc public repository
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "Accept: application/vnd.github.everest-preview+json" \
+            https://api.github.com/repos/chickarmy/chickenbot-web/dispatches \
+            -d '{"event_type": "trigger-workflow", "client_payload": {"version": "${{ github.ref_name }}", "label": "release ${{ github.ref_name }}", "label_fr": "release ${{ github.ref_name }}", "description": "This is the description", "description_fr": "Ceci est la description", "note": "${{ env.REPO_WEB_URL }}/releases/tag/${{ github.ref_name }}", "download": "${{ env.REPO_WEB_URL }}/releases/download/${{ github.ref_name }}/package.readme.txt"}}'
