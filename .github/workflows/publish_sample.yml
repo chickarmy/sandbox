@@ -61,7 +61,7 @@ jobs:
             cat curl_response
             run_id=$(jq -r ".workflow_runs[] | select(.display_title==\"push-new-version\") | .id" < curl_response)
             [ -n "$run_id" ] || echo "Waiting for workflow run ID..."
-            [ -n "$run_id" ] || sleep 10
+            [ -n "$run_id" ] || sleep 3
           done
 
           echo "Workflow run ID: $run_id"
