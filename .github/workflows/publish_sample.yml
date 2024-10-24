@@ -31,7 +31,7 @@ jobs:
           curl -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github.everest-preview+json" \
-            https://api.github.com/repos/chickarmy/chickenbot-web/dispatches \
+            ${{ env.REPO_API_URL }}/dispatches \
             -d '{
               "event_type": "push-new-version",
               "client_payload": {
@@ -56,12 +56,12 @@ jobs:
           until [ -n "$run_id" ]; do
             curl -s \
               -H "Authorization: token $token" \
-              "{{ env.REPO_API_URL }}/actions/runs?event=repository_dispatch&status=in_progress" \
+              "${{ env.REPO_API_URL }}/actions/runs?event=repository_dispatch&status=in_progress" \
               > curl_response
             cat curl_response
             run_id=$(jq -r ".workflow_runs[] | select(.display_title==\"push-new-version\") | .id" < curl_response)
-            echo "Waiting for workflow run ID..."
-            sleep 10
+            [ -n "$run_id" ] || echo "Waiting for workflow run ID..."
+            [ -n "$run_id" ] || sleep 10
           done
 
           echo "Workflow run ID: $run_id"
@@ -71,7 +71,7 @@ jobs:
           until [ "$conclusion" == "success" ]; do
             conclusion=$(curl -s \
               -H "Authorization: token $token" \
-              "{{ env.REPO_API_URL }}/actions/runs/$run_id" \
+              "${{ env.REPO_API_URL }}/actions/runs/$run_id" \
               | jq -r ".conclusion")
             if [ "$conclusion" == "failure" ]; then
               echo "The workflow failed."
