@@ -54,10 +54,12 @@ jobs:
 
           # Poll for the workflow run ID of the triggered workflow
           until [ -n "$run_id" ]; do
-            run_id=$(curl -s \
+            curl -s \
               -H "Authorization: token $token" \
               "{{ env.REPO_API_URL }}/actions/runs?event=repository_dispatch&status=in_progress" \
-              | jq -r ".workflow_runs[] | select(.head_branch==\"main\") | .id")
+              > curl_response
+            cat curl_response
+            run_id=$(jq -r ".workflow_runs[] | select(.display_title==\"push-new-version\") | .id" < curl_response)
             echo "Waiting for workflow run ID..."
             sleep 10
           done
