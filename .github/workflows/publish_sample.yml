@@ -13,18 +13,76 @@ jobs:
       REPO_WEB_URL: https://github.com/chickarmy/chickenbot-web
       REPO_API_URL: https://api.github.com/repos/chickarmy/chickenbot-web
       FILE_NAME: package.readme.txt
-      SKIP_PUBLISH: true
+      SKIP_PUBLISH: false
 
     steps:
       - name: Checkout private repo
         uses: actions/checkout@v3
 
-      - name: Prepare file for release
+      - name: Prepare release file
         run: |
           echo 'this is sample publish from private repo' > $FILE_NAME
           mkdir -p ./packages
           mv $FILE_NAME ./packages/
           echo "Preparing file for release"
+
+      - name: chickenbot-web trigger push-new-version workflow
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "Accept: application/vnd.github.everest-preview+json" \
+            https://api.github.com/repos/chickarmy/chickenbot-web/dispatches \
+            -d '{
+              "event_type": "push-new-version",
+              "client_payload": {
+                "version": "${{ github.ref_name }}",
+                "label": "release ${{ github.ref_name }}",
+                "label_fr": "release ${{ github.ref_name }}",
+                "description": "This is the TEST description",
+                "description_fr": "Ceci est la description TEST",
+                "note": "${{ env.REPO_WEB_URL }}/releases/tag/${{ github.ref_name }}",
+                "download": "${{ env.REPO_WEB_URL }}/releases/download/${{ github.ref_name }}/package.readme.txt"
+              }
+            }'
+      - name: Waiting for push-new-version workflow completion
+        id: wait_for_completion
+        run: |
+          # Wait and check the status of the triggered workflow
+          workflow="push-new-version"
+          token="${{ secrets.PAT_TOKEN }}"
+          run_id=""
+
+          # Poll for the workflow run ID of the triggered workflow
+          until [ -n "$run_id" ]; do
+            run_id=$(curl -s \
+              -H "Authorization: token $token" \
+              "{{ env.REPO_API_URL }}/actions/runs?event=repository_dispatch&status=in_progress" \
+              | jq -r ".workflow_runs[] | select(.head_branch==\"${{ github.ref_name }}\") | .id")
+            echo "Waiting for workflow run ID..."
+            sleep 10
+          done
+
+          echo "Workflow run ID: $run_id"
+
+          # Poll for the workflow status until it's completed
+          conclusion=""
+          until [ "$conclusion" == "success" ]; do
+            conclusion=$(curl -s \
+              -H "Authorization: token $token" \
+              "{{ env.REPO_API_URL }}/actions/runs/$run_id" \
+              | jq -r ".conclusion")
+            if [ "$conclusion" == "failure" ]; then
+              echo "The workflow failed."
+              exit 1
+            elif [ "$conclusion" == "cancelled" ]; then
+              echo "The workflow was cancelled."
+              exit 1
+            fi
+            echo "Waiting for the workflow to complete..."
+            sleep 10
+          done
+
+          echo "Workflow completed successfully."
 
       - name: Create Release in Public Repo
         env:
@@ -102,11 +160,3 @@ jobs:
 
           echo "Release page: $RELEASE_URL"
           echo "Direct download link: $DOWNLOAD_URL"
-
-      - name: Trigger workflow in doc public repository
-        run: |
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
-            -H "Accept: application/vnd.github.everest-preview+json" \
-            https://api.github.com/repos/chickarmy/chickenbot-web/dispatches \
-            -d '{"event_type": "trigger-workflow", "client_payload": {"version": "${{ github.ref_name }}", "label": "release ${{ github.ref_name }}", "label_fr": "release ${{ github.ref_name }}", "description": "This is the description", "description_fr": "Ceci est la description", "note": "${{ env.REPO_WEB_URL }}/releases/tag/${{ github.ref_name }}", "download": "${{ env.REPO_WEB_URL }}/releases/download/${{ github.ref_name }}/package.readme.txt"}}'
