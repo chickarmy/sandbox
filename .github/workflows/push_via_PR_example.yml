@@ -1,6 +1,7 @@
 name: Push via PR example
 # WARN : need write main protection rule
 
+# repository settings requirement : Allow GitHub Actions to create and approve pull requests
 permissions:
   contents: write
   pull-requests: write
