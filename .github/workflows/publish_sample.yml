@@ -64,7 +64,7 @@ jobs:
             [ -n "$run_id" ] || sleep 3
           done
 
-          echo "Workflow run ID: $run_id"
+          echo "ℹ️ Workflow ID: $run_id"
 
           # Poll for the workflow status until it's completed
           conclusion=""
@@ -74,17 +74,17 @@ jobs:
               "${{ env.REPO_API_URL }}/actions/runs/$run_id" \
               | jq -r ".conclusion")
             if [ "$conclusion" == "failure" ]; then
-              echo "The workflow failed."
+              echo " 🔴 The workflow FAILED."
               exit 1
             elif [ "$conclusion" == "cancelled" ]; then
-              echo "The workflow was cancelled."
+              echo " 🚫 The workflow was CANCELLED."
               exit 1
             fi
             echo "Waiting for the workflow to complete..."
             sleep 10
           done
 
-          echo "Workflow completed successfully."
+          echo " ✅ Workflow completed successfully."
 
       - name: Create Release in Public Repo
         env:
