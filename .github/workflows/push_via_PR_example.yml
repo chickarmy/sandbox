@@ -71,15 +71,14 @@ jobs:
         with:
           script: |
             const prNumber = ${{ steps.find_pr.outputs.result }};
+            var tokenAuth = new Credentials(process.env.BYPASS_USER_PAT);
+            github.Credentials = tokenAuth;
             const response = await github.rest.pulls.createReview({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
               body: 'Cette PR est prête à être fusionnée.',
-              event: 'APPROVE',
-              headers: {
-                authorization: `token ${process.env.BYPASS_USER_PAT}`
-              }
+              event: 'APPROVE'
             });
             console.log(`Review created for pull request #${prNumber}.`);
         env:
