@@ -81,19 +81,26 @@ jobs:
               event: 'APPROVE'
             });
             console.log(`Review created for pull request #${prNumber}.`);
-        env:
-          BYPASS_USER_PAT: ${{ secrets.BYPASS_USER_PAT }}
 
-      - name: Merge Pull Request
+
+      - name: Merge Pull Request using authorized user to bypass rule
         uses: actions/github-script@v7
         with:
           script: |
-            const prNumber = ${{ steps.find_pr.outputs.result }};
-            console.log(`Merging pull request: #${prNumber}`);
-            await github.rest.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-              merge_method: 'rebase'
+            const pull_number = ${{ steps.find_pr.outputs.result }};
+            console.log(`Merging pull request: #${pull_number}`);
+            const auth = process.env.BYPASS_USER_PAT;
+            const octokit = new Octokit({
+                 auth,
+                 userAgent: 'my GHA stage',
+                 timeZone: 'Europe/Paris',
+                 baseUrl: 'https://api.github.com',
+                 log: { debug: () => { }, info: () => { }, warn: console.warn, error: console.error },
+                 request: { agent: undefined, fetch: undefined, timeout: 0 }
             });
-            console.log(`Pull request #${prNumber} merged successfully.`);
+            // merge pull request
+            console.log(`Merging pull request: #${pull_number}`);
+            await octokit.rest.pulls.merge({ owner, repo, pull_number, merge_method: 'rebase' });
+            console.log(`Pull request #${pull_number} merged successfully.`);
+        env:
+          BYPASS_USER_PAT: ${{ secrets.BYPASS_USER_PAT }}
