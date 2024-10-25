@@ -28,7 +28,7 @@ jobs:
           date > my_new_date.txt
           echo "BRANCH_NAME=update-version-${{ github.sha }}" >> $GITHUB_ENV
           echo "VERSION=0.0.1-fake" >> $GITHUB_ENV
- 
+
       - name: Create a pull request
         uses: peter-evans/create-pull-request@v7
         with:
@@ -47,7 +47,7 @@ jobs:
             const branchName = '${{ env.BRANCH_NAME }}';
             console.log(`Searching for pull request for branch: ${branchName}`);
             console.log(`Owner: ${context.repo.owner}, Repo: ${context.repo.repo}`);
-            console.log(context)
+            // DEBUG / console.log(context)
             
             const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -86,12 +86,14 @@ jobs:
           script: |
             const prNumber = ${{ steps.find_pr.outputs.result }};
             console.log(`Merging pull request: #${prNumber}`);
-            const githubWithPat = new github.GitHub(process.env.BYPASS_USER_PAT);
-            await githubWithPat.rest.pulls.merge({
+            await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
               merge_method: 'rebase',
+              headers: {
+                authorization: `token ${process.env.BYPASS_USER_PAT}`
+              }
             });
             console.log(`Pull request #${prNumber} merged successfully.`);
         env:
