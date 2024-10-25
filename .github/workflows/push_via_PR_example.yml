@@ -64,23 +64,23 @@ jobs:
               return null;
             }
 
+#     - name: Create PR Review
+#       id: create_review
+#       uses: actions/github-script@v7
+#       with:
+#         script: |
+#           const prNumber = ${{ steps.find_pr.outputs.result }};
+#           const response = await github.rest.pulls.createReview({
+#             owner: context.repo.owner,
+#             repo: context.repo.repo,
+#             pull_number: prNumber,
+#             body: 'Cette PR est prête à être fusionnée.',
+#             event: 'APPROVE'
+#           });
+#           console.log(`Review created for pull request #${prNumber}.`);
+
+
       # BYPASS_USER_PAT - fine-grained PAT with content+pullrequest write from user that can review
-      - name: Create PR Review
-        id: create_review
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = ${{ steps.find_pr.outputs.result }};
-            const response = await github.rest.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-              body: 'Cette PR est prête à être fusionnée.',
-              event: 'APPROVE'
-            });
-            console.log(`Review created for pull request #${prNumber}.`);
-
-
       - name: Merge Pull Request using authorized user to bypass rule
         uses: actions/github-script@v7
         with:
