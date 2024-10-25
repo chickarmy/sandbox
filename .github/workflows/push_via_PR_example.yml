@@ -71,8 +71,6 @@ jobs:
         with:
           script: |
             const prNumber = ${{ steps.find_pr.outputs.result }};
-            var tokenAuth = new Credentials(process.env.BYPASS_USER_PAT);
-            github.Credentials = tokenAuth;
             const response = await github.rest.pulls.createReview({
               owner: context.repo.owner,
               repo: context.repo.repo,
