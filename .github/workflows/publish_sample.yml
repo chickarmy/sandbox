@@ -21,7 +21,7 @@ jobs:
 
       - name: Prepare release file
         run: |
-          echo 'this is sample publish from private repo' > $FILE_NAME
+          echo 'this is sample publish from another repo' > $FILE_NAME
           mkdir -p ./packages
           mv $FILE_NAME ./packages/
           echo "Preparing file for release"
