@@ -87,7 +87,12 @@ jobs:
           script: |
             const pull_number = ${{ steps.find_pr.outputs.result }};
             console.log(`Merging pull request: #${pull_number}`);
-            await github.rest.pulls.merge({ owner, repo, pull_number, merge_method: 'rebase' });
+            await github.rest.pulls.merge({ 
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number, 
+                  merge_method: 'rebase'
+            });
             console.log(`Pull request #${pull_number} merged successfully.`);
         env:
           BYPASS_USER_PAT: ${{ secrets.BYPASS_USER_PAT }}
