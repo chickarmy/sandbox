@@ -1,4 +1,13 @@
 name: Publish to Public Repo Release
+#
+# plan
+# 1) prepare in current repo the release content (package)
+# 2) push to remote public web repo the release definition (version, description..)
+# 3) wait for remote workflow end with success
+# 4) create a new release draft of public web repo
+# 5) upload and attach package to the public release
+# 6) publish draft release
+# 7) lets report release links, and download links
 
 on:
   push:
@@ -86,7 +95,7 @@ jobs:
 
           echo " ✅ Workflow completed successfully."
 
-      - name: Create Release in Public Repo
+      - name: Create Release Draft in Public Repo
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
