@@ -84,6 +84,8 @@ jobs:
 
       - name: 2) push new release definition to another repo
         run: |
+          # Disable -e temporarily to capture the curl exit status manually
+          set +e
           response=$(curl -f -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github.everest-preview+json" \
@@ -100,9 +102,13 @@ jobs:
                 "download": "${{ env.REPO_WEB_URL }}/releases/download/${{ env.VERSION }}/package.readme.txt"
               }
             }')
+            # Capture the curl exit status
+            exit_status=$?
+            # Re-enable -e for the rest of the script
+            set -e
             # Check for errors
-            if [ $? -ne 0 ]; then
-              echo "Error: curl command failed. Response: $response"
+            if [ $exit_status  -ne 0 ]; then
+              echo "Error: curl command failed with status $exit_status and response:$response"
               exit 1
             fi
 
