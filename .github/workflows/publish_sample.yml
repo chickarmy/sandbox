@@ -84,7 +84,7 @@ jobs:
 
       - name: 2) push new release definition to another repo
         run: |
-          response=$(curl -X POST \
+          response=$(curl -f -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github.everest-preview+json" \
             ${{ env.REPO_API_URL }}/dispatches \
@@ -155,7 +155,7 @@ jobs:
           RESPONSE_FILE="release_response.json"
           
           # Create the release and save the response in a file
-          curl -s -X POST \
+          curl -f -s -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{
@@ -207,7 +207,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           # Convert the draft release to a published release
-          curl -s -X PATCH \
+          curl -f -s -X PATCH \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"draft": false}' \
