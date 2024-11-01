@@ -67,7 +67,7 @@ jobs:
           ## s/\n/\\n/g : substitute all carriage return by \n.
           ## s/\'/’/g : substitute single quote by typographic quote 0146.
           extract_value() {
-              echo "$(echo "$version_data" | yq -r "$1" | sed ':a;N;$!ba;s/\n/\\n/g; s/\'/’/g')"
+              echo "$(echo "$version_data" | yq -r "$1" | sed ':a;N;$!ba;s/\n/\\n/g; s/'\''/’/g')"
           }
           # and store them in environment variables
           echo "LABEL=$(extract_value '.label')" >> $GITHUB_ENV
