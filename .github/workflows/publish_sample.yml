@@ -57,16 +57,23 @@ jobs:
             exit 1
           fi
 
-          # Extract specific fields and store them in environment variables
+          ########
+          # Function to extract specific fields and format values
+          ########
+          # Extract and 
           # yq -r '.description' : use yq to extract (-r) raw value (without quotes)
-          # sed ':a;N;$!ba;s/\n/\\n/g' : 
+          # sed ':a;N;$!ba;s/\n/\\n/g; s/\'/’/g' : 
           ## :a;N;$!ba; : get all line in a buffer
           ## s/\n/\\n/g : substitute all carriage return by \n.
-          ########
-          echo "LABEL=$(echo "$version_data" | yq '.label'| sed ':a;N;$!ba;s/\n/\\n/g')" >> $GITHUB_ENV
-          echo "LABEL_FR=$(echo "$version_data" | yq '.label_fr'| sed ':a;N;$!ba;s/\n/\\n/g')" >> $GITHUB_ENV
-          echo "DESCRIPTION=$(echo "$version_data" | yq '.description'| sed ':a;N;$!ba;s/\n/\\n/g')" >> $GITHUB_ENV
-          echo "DESCRIPTION_FR=$(echo "$version_data" | yq '.description_fr'| sed ':a;N;$!ba;s/\n/\\n/g')" >> $GITHUB_ENV
+          ## s/\'/’/g : substitute single quote by typographic quote 0146.
+          extract_value() {
+              echo "$(echo "$version_data" | yq -r "$1" | sed ':a;N;$!ba;s/\n/\\n/g; s/\'/’/g')"
+          }
+          # and store them in environment variables
+          echo "LABEL=$(extract_value '.label')" >> $GITHUB_ENV
+          echo "LABEL_FR=$(extract_value '.label_fr')" >> $GITHUB_ENV
+          echo "DESCRIPTION=$(extract_value '.description')" >> $GITHUB_ENV
+          echo "DESCRIPTION_FR=$(extract_value '.description_fr')" >> $GITHUB_ENV
 
       - name: 1) Prepare release file (Simulation)
         run: |
