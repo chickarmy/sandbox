@@ -1,0 +1,14 @@
+{
+  "name": "sandbox-fake-app",
+  "version": "0.0.001",
+  "type": "module",
+  "description": "a sandbox repo to play with GHA",
+  "private": false,
+  "keywords": ["github","actions","sandbox"],
+  "author": "boly38",
+  "license": "PUBLIC DOMAIN",
+  "bugs": {
+    "url": "https://github.com/chickarmy/sandbox/issues"
+  },
+  "homepage": "https://github.com/chickarmy/sandbox/"
+}

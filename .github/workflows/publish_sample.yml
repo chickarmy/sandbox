@@ -1,8 +1,9 @@
 name: Publish to Public Repo Release
 #
 # plan
+# 0) read in current repo the release meta-info (versions.yml)
 # 1) prepare in current repo the release content (package)
-# 2) push to remote public web repo the release definition (version, description..)
+# 2) push to remote public web repo the release definition (version, description...)
 # 3) wait for remote workflow end with success
 # 4) create a new release draft of public web repo
 # 5) upload and attach package to the public release
@@ -22,20 +23,54 @@ jobs:
       REPO_WEB_URL: https://github.com/chickarmy/chickenbot-web
       REPO_API_URL: https://api.github.com/repos/chickarmy/chickenbot-web
       FILE_NAME: package.readme.txt
-      SKIP_PUBLISH: false
+      SKIP_PUBLISH: true
 
     steps:
-      - name: Checkout private repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Prepare release file
+      - name: 0) Read package.json version
+        id: package_version
+        run: |
+          # Extract the version from package.json and store it as an environment variable
+          version=$(jq -r '.version' package.json)
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "Package version is $version"
+          if [[ "${{ github.ref_name }}" != "v${{ env.version }}" ]]; then
+            echo "Error: Tag ${{ github.ref_name }} does not match version v${{ env.version }}"
+            exit 1
+          fi
+
+      # https://github.com/mikefarah/yq?tab=readme-ov-file#github-action
+      - name: Install yq
+        uses: mikefarah/yq@master
+
+      - name: 0) Read version meta-info from versions.yml to env
+        id: yaml_to_env
+        run: |
+          # Extract data for version ${{ env.VERSION }} from versions.yml
+          version_data=$(yq '.versions[] | select(.version == "${{ env.VERSION }}")' versions.yml)
+
+          # Check if version_data is empty
+          if [ -z "$version_data" ]; then
+            echo "Error: No data found for version ${{ env.VERSION }} in versions.yml"
+            exit 1
+          fi
+
+          # Extract specific fields and store them in environment variables
+          echo "LABEL=$(echo "$version_data" | yq '.label')" >> $GITHUB_ENV
+          echo "LABEL_FR=$(echo "$version_data" | yq '.label_fr')" >> $GITHUB_ENV
+          echo "DESCRIPTION=$(echo "$version_data" | yq '.description')" >> $GITHUB_ENV
+          echo "DESCRIPTION_FR=$(echo "$version_data" | yq '.description_fr')" >> $GITHUB_ENV
+
+      - name: 1) Prepare release file (Simulation)
         run: |
           echo 'this is sample publish from another repo' > $FILE_NAME
           mkdir -p ./packages
           mv $FILE_NAME ./packages/
           echo "Preparing file for release"
 
-      - name: chickenbot-web trigger push-new-version workflow
+      - name: 2) push new release definition to another repo
         run: |
           curl -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
@@ -44,16 +79,17 @@ jobs:
             -d '{
               "event_type": "push-new-version",
               "client_payload": {
-                "version": "${{ github.ref_name }}",
-                "label": "release ${{ github.ref_name }}",
-                "label_fr": "release ${{ github.ref_name }}",
-                "description": "This is the TEST description",
-                "description_fr": "Ceci est la description TEST",
-                "note": "${{ env.REPO_WEB_URL }}/releases/tag/${{ github.ref_name }}",
-                "download": "${{ env.REPO_WEB_URL }}/releases/download/${{ github.ref_name }}/package.readme.txt"
+                "version": "${{ env.VERSION }}",
+                "label": "${{ env.LABEL }}",
+                "label_fr": "${{ env.LABEL_FR }}",
+                "description": "${{ env.DESCRIPTION }}",
+                "description_fr": ""${{ env.DESCRIPTION_FR }}",
+                "note": "${{ env.REPO_WEB_URL }}/releases/tag/${{ env.VERSION }}",
+                "download": "${{ env.REPO_WEB_URL }}/releases/download/${{ env.VERSION }}/package.readme.txt"
               }
             }'
-      - name: Waiting for push-new-version workflow completion
+
+      - name: 3) Waiting for push-new-version workflow completion
         id: wait_for_completion
         run: |
           # Wait and check the status of the triggered workflow
@@ -95,7 +131,7 @@ jobs:
 
           echo " ✅ Workflow completed successfully."
 
-      - name: Create Release Draft in Public Repo
+      - name: 4) Create Release Draft in Public Repo
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
@@ -136,7 +172,7 @@ jobs:
       ## original action - WARN: archived repository
       ## uses: actions/upload-release-asset@v1
       ## https://github.com/actions/upload-release-asset/blob/main/src/upload-release-asset.js
-      - name: Upload Release Asset
+      - name: 5) Upload Release Asset
         id: upload-release-asset
         # more recent fork node16 @v1.1.1 => @main WARN about changes
         uses: sekwah41/upload-release-assets@main
@@ -148,7 +184,7 @@ jobs:
           asset_name: ${{ env.FILE_NAME }}
           asset_content_type: text/plain
 
-      - name: Publish Draft Release
+      - name: 6) Publish Draft Release
         if: ${{ env.SKIP_PUBLISH != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
@@ -161,7 +197,7 @@ jobs:
             ${{ env.REPO_API_URL }}/releases/${{ env.RELEASE_ID }}
 
       ## WARN : links are ok only when release is published
-      - name: Echo published release and download links
+      - name: 7) Echo published release and download links
         if: ${{ env.SKIP_PUBLISH != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
