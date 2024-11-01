@@ -1,0 +1,21 @@
+name: Extract Package Version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract-package-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Read version from package.json
+        id: package_version
+        run: |
+          # Extract the version from package.json and store it as an environment variable
+          version=$(jq -r '.version' package.json)
+          echo "version=$version" >> $GITHUB_ENV
+
+      - name: Echo package version
+        run: echo "Package version is ${{ env.version }}"

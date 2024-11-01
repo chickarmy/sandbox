@@ -1,5 +1,15 @@
 name: MonProjet
 versions:
+  - version: 0.0.0000000000000000000000000001
+    label: test release 0.0.001
+    label_fr: test publication 0.0.001
+    description: This is the publish version TEST description
+    description_fr: |
+      AH !
+      Ceci les amis
+      est un test de publication
+      d'une fausse version de test 
+
   - version: 1.0.0
     label: release 1.0.0
     label_fr: publication 1.0.0
