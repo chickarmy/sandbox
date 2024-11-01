@@ -1,6 +1,6 @@
 name: MonProjet
 versions:
-  - version: 0.0.0000000000000000000000000001
+  - version: 0.0.001
     label: test release 0.0.001
     label_fr: test publication 0.0.001
     description: This is the publish version TEST description
