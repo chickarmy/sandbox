@@ -84,7 +84,7 @@ jobs:
 
       - name: 2) push new release definition to another repo
         run: |
-          curl -X POST \
+          response=$(curl -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github.everest-preview+json" \
             ${{ env.REPO_API_URL }}/dispatches \
@@ -99,7 +99,12 @@ jobs:
                 "note": "${{ env.REPO_WEB_URL }}/releases/tag/${{ env.VERSION }}",
                 "download": "${{ env.REPO_WEB_URL }}/releases/download/${{ env.VERSION }}/package.readme.txt"
               }
-            }'
+            }')
+            # Check for errors
+            if [ $? -ne 0 ]; then
+              echo "Error: curl command failed. Response: $response"
+              exit 1
+            fi
 
       - name: 3) Waiting for push-new-version workflow completion
         id: wait_for_completion
