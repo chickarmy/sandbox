@@ -1,0 +1,33 @@
+name: TEST YAML Data
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract-yaml:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: 1.0.0
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install yq (for YAML manipulation)
+        run: sudo apt-get install -y yq
+
+      - name: Read YAML and set environment variables
+        id: yaml_to_env
+        run: |
+          # Extract data for version ${{ env.VERSION }} from versions.yml
+          version_data=$(yq '.versions[] | select(.version == "${{ env.VERSION }}")' versions.yml)
+
+          # Extract specific fields and store them in environment variables
+          echo "version=$(echo "$version_data" | yq '.version')" >> $GITHUB_ENV
+          echo "label=$(echo "$version_data" | yq '.label')" >> $GITHUB_ENV
+          echo "description=$(echo "$version_data" | yq '.description')" >> $GITHUB_ENV
+
+      - name: Echo extracted variables
+        run: |
+          echo "Version: ${{ env.version }}"
+          echo "Label: ${{ env.label }}"
+          echo "Description: ${{ env.description }}"

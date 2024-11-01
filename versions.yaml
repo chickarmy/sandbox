@@ -1,0 +1,17 @@
+name: MonProjet
+versions:
+  - version: 1.0.0
+    label: release 1.0.0
+    label_fr: publication 1.0.0
+    description: This is the TEST description
+    description_fr: |
+      Première FAKE version officielle du projet.
+      Inclut les fonctionnalités de base et la documentation initiale.
+
+  - version: 1.0.1
+    label: release 1.0.&
+    label_fr: publication 1.0.1
+    description: This is the TESTBis description
+    description_fr: |
+      Seconde FAKE version du projet.
+      Inclut des fonctionnalités de plus.
