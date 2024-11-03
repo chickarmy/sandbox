@@ -3,7 +3,10 @@ versions:
   - version: 0.0.001
     label: test release 0.0.001
     label_fr: test publication 0.0.001
-    description: This is the publish version TEST description
+    description: |
+      OH !
+      Hey friends,
+      this is a TEST of a fake version description
     description_fr: |
       AH !
       Ceci les amis
