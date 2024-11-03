@@ -169,8 +169,8 @@ jobs:
             -d '{
               "tag_name": "'${{ github.ref_name }}'",
               "target_commitish": "main",
-              "name": "'${{ github.ref_name }}'",
-              "body": "Release from private repo",
+              "name": "${{ env.LABEL}} | ${{ env.LABEL_FR}}",
+              "body": "${{ env.DESCRIPTION}}\n\n##French version\n\n${{ env.DESCRIPTION_FR}}",
               "draft": true,
               "prerelease": false
             }' \
