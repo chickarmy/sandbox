@@ -114,7 +114,7 @@ jobs:
             
                 console.log(`PR #${prNumber} ref is ${sha}`);
             
-                // get PR checks
+                // get PR checks - https://octokit.github.io/rest.js/v21/#checks-list-for-ref
                 const { data } = await github.rest.checks.listForRef({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -122,10 +122,10 @@ jobs:
                 });
                 const checks = data.check_runs;
             
-                if (statuses.length < 1) {
+                if (checks.length < 1) {
                   console.log('Await until CI/CD at least one check_run appears.');
                 } else {
-                  console.log("statuses :\n" + JSON.stringify(checks, null, 2));
+                  console.log("checks :\n" + JSON.stringify(checks, null, 2));
                   allChecksPassed = checks.every(check => check.status === 'completed' && check.conclusion === 'success');
             
                   if (allChecksPassed) {
