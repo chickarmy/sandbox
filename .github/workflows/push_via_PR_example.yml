@@ -100,6 +100,7 @@ jobs:
             const checkInterval = 30 * 1000; // 30 seconds
             const maxAttempts = 20; // Total wait time = maxAttempts * checkInterval
             let attempt = 0;
+            let checks = [];
             
             while (attempt < maxAttempts) {
               console.log(`Checking status of CI/CD checks (Attempt ${attempt + 1}/${maxAttempts})...`);
@@ -120,7 +121,7 @@ jobs:
                   repo: context.repo.repo,
                   ref: sha,
                 });
-                const checks = data.check_runs;
+                checks = data.check_runs;
             
                 if (checks.length < 1) {
                   console.log('⌛ Await until CI/CD at least one check_run appears.');
