@@ -1,4 +1,4 @@
-name: Push via PR example
+name: Push via PR draft alternatives
 # WARN : need write main protection rule
 
 # repository settings requirement : Allow GitHub Actions to create and approve pull requests
