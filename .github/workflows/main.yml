@@ -8,7 +8,6 @@ on:
     branches:
      - main
   pull_request:
-    types: [ opened, synchronize ] # 'opened' added to trigger this workflow when PR it-self is created by a workflow
     branches:
       - main
 
@@ -20,9 +19,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: fake_QA_await_10sec
+    - name: simulate_QA_await_10sec
       run: |
-        echo "(fake) QA in progress ..."
-        sleep 3
-        echo "... ROHHHHHHHHHHHHHHHHHHH FAILED"
-        exit 1
+        echo "(simulate) QA in progress ..."
+        sleep 10
+        echo "... OK"

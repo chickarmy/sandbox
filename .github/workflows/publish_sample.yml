@@ -8,7 +8,7 @@ name: Publish to Public Repo Release
 # 4) create a new release draft of public web repo
 # 5) upload and attach package to the public release
 # 6) publish draft release
-# 7) lets report release links, and download links
+# 7) let report release links, and download links
 
 on:
   push:

@@ -1,10 +1,13 @@
 name: Push via PR example
 # WARN : need write main protection rule
-
+## REQUIREMENTS
 # repository settings requirement : Allow GitHub Actions to create and approve pull requests
 permissions:
   contents: write
   pull-requests: write
+
+## Actions > Secrets
+# BYPASS_USER_PAT - fine-grained PAT with content+pullrequest write from user that can review
 
 # this workflow is triggered from UI
 on:
@@ -41,53 +44,11 @@ jobs:
           body: This PR updates the version file automatically. Generated from `push_via_PR_example.yml`.
           author: ChickArmy[bot] <github-actions[bot].chickarmy@users.noreply.github.com>
 
-      # another way to create PR via actions/github-script
-      #     - name: Create PR Review
-      #       id: create_review
-      #       uses: actions/github-script@v7
-      #       with:
-      #         script: |
-      #           const prNumber = ${{ steps.find_pr.outputs.result }};
-      #           const response = await github.rest.pulls.createReview({
-      #             owner: context.repo.owner,
-      #             repo: context.repo.repo,
-      #             pull_number: prNumber,
-      #             body: 'Cette PR est prête à être fusionnée.',
-      #             event: 'APPROVE'
-      #           });
-      #           console.log(`Review created for pull request #${prNumber}.`);
-
       - name: Create Pull request outputs
         if: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
-
-      # another way to find PR via actions/github-script
-      # - name: Find Pull Request
-      #   id: find_pr
-      #   uses: actions/github-script@v7
-      #   with:
-      #     script: |
-      #       const branchName = '${{ env.BRANCH_NAME }}';
-      #       console.log(`Searching for pull request for branch: ${branchName}`);
-      #       console.log(`Owner: ${context.repo.owner}, Repo: ${context.repo.repo}`);
-      #       // DEBUG / console.log(context)
-      #
-      #       const prs = await github.rest.pulls.list({
-      #         owner: context.repo.owner,
-      #         repo: context.repo.repo,
-      #         state: 'open',
-      #       });
-      #
-      #       const pr = prs.data.find(pr => pr.head.ref === branchName);
-      #       if (pr) {
-      #         console.log(`Found pull request: #${pr.number} - ${pr.title}`);
-      #         return pr.number;
-      #       } else {
-      #         console.log('No pull request found for this branch.');
-      #         return null;
-      #       }
 
       # WARN this step expects at least 1 check in success to pass ! (0 check results in timeout error)
       - name: Wait for PR related Checks to Pass
@@ -181,8 +142,6 @@ jobs:
               console.log(`✅ ${checks.length} CI/CD checks in SUCCESS 🥇`);
             }
 
-
-      # BYPASS_USER_PAT - fine-grained PAT with content+pullrequest write from user that can review
       - name: Merge Pull Request using authorized user to bypass rule
         if: ${{ steps.cpr.outputs.pull-request-number }}
         uses: actions/github-script@v7
