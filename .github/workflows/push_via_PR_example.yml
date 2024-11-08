@@ -112,18 +112,21 @@ jobs:
                   pull_number: prNumber,
                 });
             
+                console.log(`PR #${prNumber} ref is ${sha}`);
+            
                 // get PR checks
-                const { data: { statuses } } = await github.rest.repos.getCombinedStatusForRef({
+                const { data } = await github.rest.checks.listForRef({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   ref: sha,
                 });
+                const checks = data.check_runs;
             
                 if (statuses.length < 1) {
-                  console.log('Await until CI/CD at least one check appears.');
+                  console.log('Await until CI/CD at least one check_run appears.');
                 } else {
-                  console.log("statuses :\n" + JSON.stringify(statuses, null, 2));
-                  allChecksPassed = statuses.every(status => status.state === 'success');
+                  console.log("statuses :\n" + JSON.stringify(checks, null, 2));
+                  allChecksPassed = checks.every(check => check.status === 'completed' && check.conclusion === 'success');
             
                   if (allChecksPassed) {
                     console.log('All CI/CD checks have passed.');
