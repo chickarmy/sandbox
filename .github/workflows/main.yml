@@ -23,5 +23,6 @@ jobs:
     - name: fake_QA_await_10sec
       run: |
         echo "(fake) QA in progress ..."
-        sleep 10
-        echo "... OK"
+        sleep 3
+        echo "... ROHHHHHHHHHHHHHHHHHHH FAILED"
+        exit 1
