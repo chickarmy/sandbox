@@ -96,33 +96,53 @@ jobs:
           script: |
             const prNumber = ${{ steps.cpr.outputs.pull-request-number }};
             let allChecksPassed = false;
-            const initialWait = 30 * 1000; // 30 seconds
             const checkInterval = 30 * 1000; // 30 seconds
-            const maxAttempts = 20; // Adjust this to your needs (total wait time = maxAttempts * checkInterval)
+            const maxAttempts = 20; // Total wait time = maxAttempts * checkInterval
+            let attempt = 0;
             
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-              console.log(`Checking status of CI/CD checks (Attempt ${attempt}/${maxAttempts})...`);
-              const { data: { statuses } } = await github.rest.repos.getCombinedStatusForRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: `refs/pull/${prNumber}/merge`,
-              });
-              if (statuses.length < 1) {
-                console.log('Await until CI/CD at least one check appears.');
-              } else {
-                console.log("statuses :\n" + JSON.stringify(statuses,null,2));
-                allChecksPassed = statuses.every(status => status.state === 'success');
-  
-                if (allChecksPassed) {
-                  console.log('All CI/CD checks have passed.');
-                  break;
+            while (attempt < maxAttempts) {
+              console.log(`Checking status of CI/CD checks (Attempt ${attempt + 1}/${maxAttempts})...`);
+            
+              try {
+                // get PR details to retrieve PR SHA
+                const { data: { head: { sha } } } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                });
+            
+                // get PR checks
+                const { data: { statuses } } = await github.rest.repos.getCombinedStatusForRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: sha,
+                });
+            
+                if (statuses.length < 1) {
+                  console.log('Await until CI/CD at least one check appears.');
                 } else {
-                  console.log('Not all checks are complete or successful yet. Waiting...');
-                  await new Promise(resolve => setTimeout(resolve, checkInterval));
+                  console.log("statuses :\n" + JSON.stringify(statuses, null, 2));
+                  allChecksPassed = statuses.every(status => status.state === 'success');
+            
+                  if (allChecksPassed) {
+                    console.log('All CI/CD checks have passed.');
+                    break;
+                  } else {
+                    console.log('Not all checks are complete or successful yet. Waiting...');
+                  }
+                }
+              } catch (error) {
+                if (error.status === 404) {
+                  console.log('Pull request not yet available, waiting...');
+                } else {
+                  throw error; // Rethrow if it's a different error
                 }
               }
+            
+              await new Promise(resolve => setTimeout(resolve, checkInterval));
+              attempt++;
             }
-
+            
             if (!allChecksPassed) {
               throw new Error('CI/CD checks did not pass within the expected timeframe.');
             }
