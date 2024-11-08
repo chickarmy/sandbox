@@ -39,6 +39,22 @@ jobs:
           body: This PR updates the version file automatically. Generated from `push_via_PR_example.yml`.
           author: ChickArmy[bot] <github-actions[bot].chickarmy@users.noreply.github.com>
 
+      # another way to create PR via actions/github-script
+      #     - name: Create PR Review
+      #       id: create_review
+      #       uses: actions/github-script@v7
+      #       with:
+      #         script: |
+      #           const prNumber = ${{ steps.find_pr.outputs.result }};
+      #           const response = await github.rest.pulls.createReview({
+      #             owner: context.repo.owner,
+      #             repo: context.repo.repo,
+      #             pull_number: prNumber,
+      #             body: 'Cette PR est prête à être fusionnée.',
+      #             event: 'APPROVE'
+      #           });
+      #           console.log(`Review created for pull request #${prNumber}.`);
+
       - name: Find Pull Request
         id: find_pr
         uses: actions/github-script@v7
@@ -64,20 +80,40 @@ jobs:
               return null;
             }
 
-#     - name: Create PR Review
-#       id: create_review
-#       uses: actions/github-script@v7
-#       with:
-#         script: |
-#           const prNumber = ${{ steps.find_pr.outputs.result }};
-#           const response = await github.rest.pulls.createReview({
-#             owner: context.repo.owner,
-#             repo: context.repo.repo,
-#             pull_number: prNumber,
-#             body: 'Cette PR est prête à être fusionnée.',
-#             event: 'APPROVE'
-#           });
-#           console.log(`Review created for pull request #${prNumber}.`);
+      - name: Wait for Checks to Pass
+        if: ${{ steps.find_pr.outputs.pr_number }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = ${{ steps.find_pr.outputs.pr_number }};
+            let allChecksPassed = false;
+            const checkInterval = 30 * 1000; // 30 seconds
+            const maxAttempts = 20; // Adjust this to your needs (total wait time = maxAttempts * checkInterval)
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              console.log(`Checking status of CI/CD checks (Attempt ${attempt}/${maxAttempts})...`);
+              const { data: { statuses } } = await github.rest.repos.getCombinedStatusForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/pull/${prNumber}/merge`,
+              });
+
+              console.log("statuses :\n" + JSON.stringify(statuses,null,2));
+              allChecksPassed = statuses.every(status => status.state === 'success');
+
+              if (allChecksPassed) {
+                console.log('All CI/CD checks have passed.');
+                break;
+              } else {
+                console.log('Not all checks are complete or successful yet. Waiting...');
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+              }
+            }
+
+            if (!allChecksPassed) {
+              throw new Error('CI/CD checks did not pass within the expected timeframe.');
+            }
 
       # BYPASS_USER_PAT - fine-grained PAT with content+pullrequest write from user that can review
       - name: Merge Pull Request using authorized user to bypass rule
