@@ -96,7 +96,7 @@ jobs:
           github-token: ${{ secrets.BYPASS_USER_PAT }}
           script: |
             const prNumber = ${{ steps.cpr.outputs.pull-request-number }};
-            let allChecksPassed = false;
+            let allChecksCompleted = false;
             const checkInterval = 30 * 1000; // 30 seconds
             const maxAttempts = 20; // Total wait time = maxAttempts * checkInterval
             let attempt = 0;
@@ -105,16 +105,16 @@ jobs:
               console.log(`Checking status of CI/CD checks (Attempt ${attempt + 1}/${maxAttempts})...`);
             
               try {
-                // get PR details to retrieve PR SHA
+                // Get PR details to retrieve PR SHA
                 const { data: { head: { sha } } } = await github.rest.pulls.get({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   pull_number: prNumber,
                 });
             
-                console.log(`PR #${prNumber} ref is ${sha}`);
+                console.log(`ℹ️ PR #${prNumber} ref is ${sha}`);
             
-                // get PR checks - https://octokit.github.io/rest.js/v21/#checks-list-for-ref
+                // Get PR checks
                 const { data } = await github.rest.checks.listForRef({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -123,21 +123,20 @@ jobs:
                 const checks = data.check_runs;
             
                 if (checks.length < 1) {
-                  console.log('Await until CI/CD at least one check_run appears.');
+                  console.log('⌛ Await until CI/CD at least one check_run appears.');
                 } else {
                   console.log("checks :\n" + JSON.stringify(checks, null, 2));
-                  allChecksPassed = checks.every(check => check.status === 'completed' && check.conclusion === 'success');
-            
-                  if (allChecksPassed) {
-                    console.log('All CI/CD checks have passed.');
+                  allChecksCompleted = checks.every(check => check.status === 'completed');
+                  if (allChecksCompleted) {
+                    console.log(`✅ ${checks.length} CI/CD checks have completed.`);
                     break;
                   } else {
-                    console.log('Not all checks are complete or successful yet. Waiting...');
+                    console.log(`⌛ Not all ${checks.length} checks are complete yet. Waiting...`);
                   }
                 }
               } catch (error) {
                 if (error.status === 404) {
-                  console.log('Pull request not yet available, waiting...');
+                  console.log('⌛ Pull request not yet available, waiting...');
                 } else {
                   throw error; // Rethrow if it's a different error
                 }
@@ -147,9 +146,39 @@ jobs:
               attempt++;
             }
             
-            if (!allChecksPassed) {
-              throw new Error('CI/CD checks did not pass within the expected timeframe.');
+            if (!allChecksCompleted) {
+              throw new Error(`🔴 Some of ${checks.length} CI/CD checks did not complete within the expected timeframe.`);
             }
+            
+            // Check if all completed checks passed
+            const failedChecks = [];
+            allChecksPassed = checks.every(check => {
+              const passed = check.conclusion === 'success';
+              if (!passed) {
+                // Gather details for failed checks
+                failedChecks.push({
+                  name: check.name,
+                  conclusion: check.conclusion,
+                  completed_at: check.completed_at,
+                  html_url: check.html_url
+                });
+              }
+              return passed;
+            });
+
+            if (!allChecksPassed) {
+              console.log('Some checks failed:');
+              failedChecks.forEach(check => {
+                console.log(`- Name: ${check.name}`);
+                console.log(`  Conclusion: ${check.conclusion}`);
+                console.log(`  Completed at: ${check.completed_at}`);
+                console.log(`  Details: ${check.html_url}`);
+              });
+              throw new Error('🔴 Some CI/CD checks did not pass successfully.');
+            } else {
+              console.log(`✅ ${checks.length} CI/CD checks DONE`);
+            }
+
 
       # BYPASS_USER_PAT - fine-grained PAT with content+pullrequest write from user that can review
       - name: Merge Pull Request using authorized user to bypass rule
@@ -166,4 +195,4 @@ jobs:
                   pull_number, 
                   merge_method: 'rebase'
             });
-            console.log(`Pull request #${pull_number} merged successfully.`);
+            console.log(`✅ Pull request #${pull_number} merged successfully.`);
