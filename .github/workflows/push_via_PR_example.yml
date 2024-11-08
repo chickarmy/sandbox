@@ -88,8 +88,12 @@ jobs:
           script: |
             const prNumber = ${{ steps.find_pr.outputs.result }};
             let allChecksPassed = false;
+            const initialWait = 30 * 1000; // 30 seconds
             const checkInterval = 30 * 1000; // 30 seconds
             const maxAttempts = 20; // Adjust this to your needs (total wait time = maxAttempts * checkInterval)
+            
+            // initial wait to avoid empty initial statuses - there is a need to wait that check triggers.. 
+            await new Promise(resolve => setTimeout(resolve, initialWait));// probably to improve ..
 
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
               console.log(`Checking status of CI/CD checks (Attempt ${attempt}/${maxAttempts})...`);
