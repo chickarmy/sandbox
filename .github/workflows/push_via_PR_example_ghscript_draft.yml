@@ -1,0 +1,72 @@
+name: Push via PR example
+# WARN : need write main protection rule
+
+# repository settings requirement : Allow GitHub Actions to create and approve pull requests
+permissions:
+  contents: write
+  pull-requests: write
+
+# this workflow is triggered from UI
+on:
+  workflow_dispatch:
+
+jobs:
+  handle-dispatch:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [ 20.x ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run create some diff
+        run: |
+          date > my_new_date.txt
+          echo "BRANCH_NAME=update-version-${{ github.sha }}" >> $GITHUB_ENV
+          echo "VERSION=0.0.1-fake" >> $GITHUB_ENV
+
+      # another way to create PR via actions/github-script
+      - name: Create PR Review
+        id: create_review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.find_pr.outputs.result }};
+            const response = await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              body: 'Cette PR est prête à être fusionnée.',
+              event: 'APPROVE'
+            });
+            console.log(`Review created for pull request #${prNumber}.`);
+
+      # another way to find PR via actions/github-script
+      - name: Find Pull Request
+        id: find_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branchName = '${{ env.BRANCH_NAME }}';
+            console.log(`Searching for pull request for branch: ${branchName}`);
+            console.log(`Owner: ${context.repo.owner}, Repo: ${context.repo.repo}`);
+            // DEBUG / console.log(context)
+            
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+            });
+            
+            const pr = prs.data.find(pr => pr.head.ref === branchName);
+            if (pr) {
+              console.log(`Found pull request: #${pr.number} - ${pr.title}`);
+              return pr.number;
+            } else {
+              console.log('No pull request found for this branch.');
+              return null;
+            }
