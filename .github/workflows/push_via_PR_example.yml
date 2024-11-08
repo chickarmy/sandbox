@@ -92,9 +92,6 @@ jobs:
             const checkInterval = 30 * 1000; // 30 seconds
             const maxAttempts = 20; // Adjust this to your needs (total wait time = maxAttempts * checkInterval)
             
-            // initial wait to avoid empty initial statuses - there is a need to wait that check triggers.. 
-            await new Promise(resolve => setTimeout(resolve, initialWait));// probably to improve ..
-
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
               console.log(`Checking status of CI/CD checks (Attempt ${attempt}/${maxAttempts})...`);
               const { data: { statuses } } = await github.rest.repos.getCombinedStatusForRef({
@@ -102,16 +99,19 @@ jobs:
                 repo: context.repo.repo,
                 ref: `refs/pull/${prNumber}/merge`,
               });
-
-              console.log("statuses :\n" + JSON.stringify(statuses,null,2));
-              allChecksPassed = statuses.every(status => status.state === 'success');
-
-              if (allChecksPassed) {
-                console.log('All CI/CD checks have passed.');
-                break;
+              if (statuses.length < 1) {
+                console.log('Await until CI/CD at least one check appears.');
               } else {
-                console.log('Not all checks are complete or successful yet. Waiting...');
-                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                console.log("statuses :\n" + JSON.stringify(statuses,null,2));
+                allChecksPassed = statuses.every(status => status.state === 'success');
+  
+                if (allChecksPassed) {
+                  console.log('All CI/CD checks have passed.');
+                  break;
+                } else {
+                  console.log('Not all checks are complete or successful yet. Waiting...');
+                  await new Promise(resolve => setTimeout(resolve, checkInterval));
+                }
               }
             }
 
