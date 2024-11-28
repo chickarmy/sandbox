@@ -1,6 +1,6 @@
 {
   "name": "sandbox-fake-app",
-  "version": "0.0.001",
+  "version": "0.0.002",
   "type": "module",
   "description": "a sandbox repo to play with GHA",
   "private": false,

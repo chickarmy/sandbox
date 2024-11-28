@@ -1,5 +1,10 @@
 name: MonProjet
 versions:
+  - version: 0.0.002
+    label: test release 0.0.002
+    label_fr: test publication 0.0.002
+    description: test 72 release and assets
+    description_fr: test 72 release et assets
   - version: 0.0.001
     label: test release 0.0.001
     label_fr: test publication 0.0.001
@@ -12,19 +17,3 @@ versions:
       Ceci les amis
       est un test de publication
       d'une fausse version de test 
-
-  - version: 1.0.0
-    label: release 1.0.0
-    label_fr: publication 1.0.0
-    description: This is the TEST description
-    description_fr: |
-      Première FAKE version officielle du projet.
-      Inclut les fonctionnalités de base et la documentation initiale.
-
-  - version: 1.0.1
-    label: release 1.0.&
-    label_fr: publication 1.0.1
-    description: This is the TESTBis description
-    description_fr: |
-      Seconde FAKE version du projet.
-      Inclut des fonctionnalités de plus.

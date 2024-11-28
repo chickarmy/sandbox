@@ -22,7 +22,8 @@ jobs:
     env:
       REPO_WEB_URL: https://github.com/chickarmy/chickenbot-web
       REPO_API_URL: https://api.github.com/repos/chickarmy/chickenbot-web
-      FILE_NAME: package.readme.txt
+      FILE_NAME: mySampleTestFile-1.2.3.exe
+      SKIP_PUSH_VERSION_WORKFLOW: true
       SKIP_PUBLISH: true
 
     steps:
@@ -34,12 +35,13 @@ jobs:
         run: |
           # Extract the version from package.json and store it as an environment variable
           version=$(jq -r '.version' package.json)
-          echo "VERSION=$version" >> $GITHUB_ENV
+          expectedVersion="v$version-test"
           echo "Package version is $version"
-          if [[ "${{ github.ref_name }}" != "v$version" ]]; then
-            echo "Error: Tag ${{ github.ref_name }} does not match version v$version"
+          if [[ "${{ github.ref_name }}" != "$expectedVersion" ]]; then
+            echo "Error: Tag ${{ github.ref_name }} does not match version ${expectedVersion}"
             exit 1
           fi
+          echo "VERSION=$version" >> $GITHUB_ENV
 
       # https://github.com/mikefarah/yq?tab=readme-ov-file#github-action
       - name: Install yq
@@ -77,12 +79,13 @@ jobs:
 
       - name: 1) Prepare release file (Simulation)
         run: |
-          echo 'this is sample publish from another repo' > $FILE_NAME
-          mkdir -p ./packages
-          mv $FILE_NAME ./packages/
-          echo "Preparing file for release"
+          mkdir -p ./packages          
+          head -c 20M </dev/urandom >./packages/$FILE_NAME
+          echo "Preparing release file ./packages/$FILE_NAME done :"
+          ls -lartkh ./packages/
 
       - name: 2) push new release definition to another repo
+        if: ${{ env.SKIP_PUSH_VERSION_WORKFLOW != 'true' }}
         run: |
           # Disable -e temporarily to capture the curl exit status manually
           set +e
@@ -115,6 +118,7 @@ jobs:
             echo "$response"
 
       - name: 3) Waiting for push-new-version workflow completion
+        if: ${{ env.SKIP_PUSH_VERSION_WORKFLOW != 'true' }}
         id: wait_for_completion
         run: |
           # Wait and check the status of the triggered workflow
