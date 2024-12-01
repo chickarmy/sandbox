@@ -18,7 +18,20 @@ jobs:
 
       - name: check applications installed
         run: |
+         echo "npm --version"
          npm --version
+         echo "jq --version"
          jq --version
-         version=$(jq -r '.version' package.json)
-         echo "Package version is %version%"
+
+      - name: 0) Read package.json version
+        id: package_version
+        run: |
+          # Extract the version from package.json and store it as an environment variable
+          @echo off
+          for /f "delims=" %%i in ('jq -r ".version" package.json') do set VERSION=%%i
+          echo Package version is  %VERSION%
+          if not "%GITHUB_REF_NAME%"=="v%VERSION%" (
+            echo 🔴 Error: Tag %GITHUB_REF_NAME% does not match version v%VERSION%
+            exit /b 1
+          )
+          echo "VERSION=%VERSION%" >> $GITHUB_ENV
