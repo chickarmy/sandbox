@@ -1,0 +1,24 @@
+name: Try_win
+# this workflow is triggered from UI
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    # maybe https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: check applications installed
+        run: |
+         npm --version
+         jq --version
+         version=$(jq -r '.version' package.json)
+         echo "Package version is %version%"
