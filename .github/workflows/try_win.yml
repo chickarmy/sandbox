@@ -6,7 +6,8 @@ on:
 jobs:
   build:
     # maybe https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md
-    runs-on: windows-latest
+    runs-on:  windows-2022
+    # runs-on: windows-latest
 
     steps:
       - name: Checkout code
@@ -27,7 +28,6 @@ jobs:
         id: package_version
         run: |
           # Extract the version from package.json and store it as an environment variable
-          @echo off
           for /f "delims=" %%i in ('jq -r ".version" package.json') do set VERSION=%%i
           echo Package version is  %VERSION%
           if not "%GITHUB_REF_NAME%"=="v%VERSION%" (
