@@ -24,14 +24,11 @@ jobs:
          echo "jq --version"
          jq --version
 
-      - name: 0) Read package.json version
-        id: package_version
+      - name: Check and Set Package Version
+        run: node .github/publish_step1_check_version.js
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+      - name: show env
+        id: show_env
         run: |
-          # Extract the version from package.json and store it as an environment variable
-          for /f "delims=" %%i in ('jq -r ".version" package.json') do set VERSION=%%i
-          echo Package version is  %VERSION%
-          if not "%GITHUB_REF_NAME%"=="v%VERSION%" (
-            echo 🔴 Error: Tag %GITHUB_REF_NAME% does not match version v%VERSION%
-            exit /b 1
-          )
-          echo "VERSION=%VERSION%" >> $GITHUB_ENV
+          echo "env.VERSION:${{ env.VERSION }}"
