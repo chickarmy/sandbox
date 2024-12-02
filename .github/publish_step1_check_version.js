@@ -13,7 +13,7 @@ console.log(`Package version is ${version}`);
 
 // Comparer avec le tag GitHub
 const githubRefName = (process.env.GITHUB_REF_NAME || '').replace('refs/tags/', '');
-if (githubRefName !== `v${version}`) {
+if (githubRefName !== `v${version}` && githubRefName !== 'main') {// TODO second condition to test
     console.error(`🔴 Error: Tag ${githubRefName} does not match version v${version}`);
     process.exit(1);
 }
