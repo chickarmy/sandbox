@@ -24,7 +24,7 @@ jobs:
       - name: check applications installed
         run: |
          echo "WINDOWS Runner - https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md"
-         ver
+         cmd.exe /c ver
          echo "npm --version"
          npm --version
          echo "jq --version"
