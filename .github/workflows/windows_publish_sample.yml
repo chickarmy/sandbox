@@ -1,0 +1,92 @@
+name: windows_publish_sample
+# this workflow is triggered from UI
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on:  windows-2022
+    # runs-on: windows-latest
+    env:
+      RELEASE_EXE_FILE: dist/
+      REPO_WEB_URL: https://github.com/chickarmy/chickenbot-web
+      REPO_API_URL: https://api.github.com/repos/chickarmy/chickenbot-web
+      SKIP_PUBLISH_VERSION: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: check applications installed
+        run: |
+         echo "WINDOWS Runner - https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md"
+         ver
+         echo "npm --version"
+         npm --version
+         echo "jq --version"
+         jq --version
+
+      - name: npm install
+        # node gha_* scripts requires npm some deps from package.json
+        run: npm i
+
+      - name: 1) check_version_data
+        run: |
+          node .github/gha_1_check_version_data.js
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      - name: show env
+        id: show_env
+        run: |
+          echo "env.VERSION:${{ env.VERSION }}"
+          echo "env.LABEL:${{ env.LABEL }}"
+          echo "env.LABEL_FR:${{ env.LABEL_FR }}"
+          echo "env.DESCRIPTION:${{ env.DESCRIPTION }}"
+          echo "env.DESCRIPTION_FR:${{ env.DESCRIPTION_FR }}"
+
+      - name: 2) Prepare release package file
+        id: release_package
+        # releaseFile=./dist/chicken-bot-${{ env.VERSION }}.exe
+        run: |
+         npm run package
+         echo "DEBUG listing dist"
+         DIR dist
+         SET releaseFile=./dist/mySampleTestFile-1.2.3.exe
+         echo release file: %releaseFile%
+         echo RELEASE_EXE_FILE=%releaseFile% >> $GITHUB_ENV
+
+      - name: 3) publish_version
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        # require env
+        if: ${{ env.SKIP_PUBLISH_VERSION != 'true' }}
+        run: |
+          node .github/gha_3_publish_version.js
+
+      - name: 4) create_release_draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        # require env
+        run: |
+          node .github/gha_4_create_release_draft.js
+
+      # rely on @actions/github NodeJS library
+      ## original action - WARN: archived repository
+      ## uses: actions/upload-release-asset@v1
+      ## https://github.com/actions/upload-release-asset/blob/main/src/upload-release-asset.js
+      - name: 5) Upload Release Asset
+        id: upload-release-asset
+        # more recent fork node16 @v1.1.1 => @main WARN about changes
+        uses: sekwah41/upload-release-assets@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ env.RELEASE_UPLOAD_URL }}
+          asset_path: ${{ env.RELEASE_EXE_FILE }}
+          asset_name: chicken-bot.exe
+          asset_content_type: application/octet-stream

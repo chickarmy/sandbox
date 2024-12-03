@@ -4,11 +4,23 @@
   "type": "module",
   "description": "a sandbox repo to play with GHA",
   "private": false,
-  "keywords": ["github","actions","sandbox"],
+  "keywords": [
+    "github",
+    "actions",
+    "sandbox"
+  ],
   "author": "boly38",
   "license": "PUBLIC DOMAIN",
   "bugs": {
     "url": "https://github.com/chickarmy/sandbox/issues"
   },
-  "homepage": "https://github.com/chickarmy/sandbox/"
+  "homepage": "https://github.com/chickarmy/sandbox/",
+  "scripts": {
+    "package": "mkdir dist&& echo 'Ceci est un test' > dist/mySampleTestFile-1.2.3.exe"
+  },
+  "dependencies": {
+    "https": "^1.0.0",
+    "js-yaml": "^4.1.0",
+    "node-fetch": "^3.3.2"
+  }
 }

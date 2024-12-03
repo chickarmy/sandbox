@@ -1,21 +1,20 @@
 import fs from 'fs';
 import path from 'path';
+import yaml from "js-yaml";
 import {fileURLToPath} from 'url';
-import yaml from 'js-yaml';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const ROOT_PACKAGE_JSON = path.resolve(__dirname, '../../package.json')
 
 // Helper functions
-const readPackageVersion = () => {
-    const packageJsonPath = path.resolve(__dirname, '../package.json');
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+export const readPackageVersion = () => {
+    const packageJson = JSON.parse(fs.readFileSync(ROOT_PACKAGE_JSON, 'utf-8'));
     const version = packageJson.version;
-    console.log(`Package version is ${version}`);
+    console.log(`ℹ️ Package version is ${version}`);
     return version;
 }
 
-const checkGithubVersionAndExport = version => {
+export const checkGithubVersionAndExport = version => {
     // Compare with Github tag
     const githubRefName = (process.env.GITHUB_REF_NAME || '').replace('refs/tags/', '');
     if (githubRefName !== `v${version}`) {
@@ -27,6 +26,7 @@ const checkGithubVersionAndExport = version => {
     if (githubEnv) {
         fs.appendFileSync(githubEnv, `VERSION=${version}\n`);
     }
+    process.env.VERSION=version;
     return version;
 }
 
@@ -49,7 +49,7 @@ const checkLength = (value, fieldName) => {
     }
 };
 
-const exportMatchingVersionData = envVersion => {
+export const exportMatchingVersionData = envVersion => {
     // Load and parse versions.yml
     const versionsFilePath = './versions.yml';
     const versionsContent = fs.readFileSync(versionsFilePath, 'utf8');
@@ -80,11 +80,9 @@ const exportMatchingVersionData = envVersion => {
         fs.appendFileSync(githubEnv, `DESCRIPTION=${description}\n`);
         fs.appendFileSync(githubEnv, `DESCRIPTION_FR=${descriptionFr}\n`);
     }
-
-    console.log('✅ Successfully extracted and set environment variables.');
-};
-
-
-const version = readPackageVersion();
-const envVersion = checkGithubVersionAndExport(version);
-exportMatchingVersionData(envVersion);
+    process.env.LABEL=label;
+    process.env.LABEL_FR=labelFr;
+    process.env.DESCRIPTION=description;
+    process.env.DESCRIPTION_FR=descriptionFr;
+    console.log(`✅ version ${envVersion} data extracted and exported as environment variables.`);
+}
